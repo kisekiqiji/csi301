@@ -1,0 +1,27 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# ---- 项目补充（避免把构建产物/签名文件/临时目录推上去）----
+build/
+/_unused_backup/
+*.apk
+*.aab
+*.jks
+*.keystore
+/captures
+*.log
+# 团队协作：IDE 环境配置不入库，各自生成
+.idea/

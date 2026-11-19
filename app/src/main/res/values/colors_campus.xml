@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 状态色 -->
+    <color name="state_free">#0E9F6E</color>
+    <color name="state_soon">#F59E0B</color>
+    <color name="state_busy">#EF4444</color>
+
+    <!-- 座位四色，对应图书馆官方图例 -->
+    <color name="seat_available">#4CAF50</color>
+    <color name="seat_part_free">#8BC34A</color>
+    <color name="seat_reserved">#FFC107</color>
+    <color name="seat_unavailable">#9E9E9E</color>
+
+    <color name="text_primary">#1F2430</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="page_bg">#F6F7F9</color>
+</resources>

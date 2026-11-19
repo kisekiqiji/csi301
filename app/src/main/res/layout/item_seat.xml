@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tv_seat"
+    android:layout_width="0dp"
+    android:layout_height="40dp"
+    android:layout_columnWeight="1"
+    android:layout_margin="3dp"
+    android:gravity="center"
+    android:textColor="@android:color/white"
+    android:textSize="10sp"
+    tools:text="001" />
