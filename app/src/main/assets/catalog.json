@@ -1,0 +1,21 @@
+{
+  "note": "目录来自需求文档，未提供空间数据的楼栋不生成虚构教室或课表。",
+  "buildings": [
+    {"code":"FB","name":"Foundation Building","campusZone":"中校区"},
+    {"code":"CB","name":"Central Building","campusZone":"中校区"},
+    {"code":"SA","name":"Science Building A","campusZone":"中校区"},
+    {"code":"SB","name":"SB","campusZone":"中校区"},
+    {"code":"SC","name":"SC","campusZone":"中校区"},
+    {"code":"SD","name":"SD","campusZone":"中校区"},
+    {"code":"EE","name":"EE","campusZone":"中校区"},
+    {"code":"EB","name":"EB","campusZone":"中校区"},
+    {"code":"MA","name":"MA","campusZone":"中校区"},
+    {"code":"MB","name":"MB","campusZone":"中校区"},
+    {"code":"BS","name":"BS","campusZone":"南校区"},
+    {"code":"Design Building","name":"Design Building","campusZone":"南校区"},
+    {"code":"Humanities","name":"Humanities","campusZone":"南校区"},
+    {"code":"Emerging Sciences","name":"Emerging Sciences","campusZone":"南校区"},
+    {"code":"Film & Creative Tech","name":"Film & Creative Tech","campusZone":"南校区"},
+    {"code":"LIB","name":"图书馆","campusZone":"中校区"}
+  ]
+}

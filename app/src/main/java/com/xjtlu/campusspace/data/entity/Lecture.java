@@ -1,20 +1,17 @@
 package com.xjtlu.campusspace.data.entity;
 
-import androidx.annotation.NonNull;
-import androidx.room.Entity;
-
 /**
- * 一节课。day 是 ISO 星期（1=周一 ... 7=周日），课表每周重复。
- * startMin / endMin 是当天第几分钟，480 = 08:00。
+ * A dated classroom event projected into local minutes for the timeline.
+ * The weekday is display metadata; events do not repeat automatically.
  */
-@Entity(tableName = "lectures", primaryKeys = {"roomId", "day", "period"})
 public class Lecture {
-    @NonNull
     public String roomId = "";
     public int day;
     public int period;
     public int startMin;
     public int endMin;
+    public long startsAt;
+    public long endsAt;
     public String course = "";
     public String teacher = "";
 }

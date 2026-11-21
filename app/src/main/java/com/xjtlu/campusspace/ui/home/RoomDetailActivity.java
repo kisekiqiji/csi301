@@ -1,15 +1,12 @@
 package com.xjtlu.campusspace.ui.home;
 
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
-
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
@@ -22,149 +19,96 @@ import com.xjtlu.campusspace.data.Repo;
 import com.xjtlu.campusspace.data.entity.Lecture;
 import com.xjtlu.campusspace.data.entity.Note;
 import com.xjtlu.campusspace.data.entity.Space;
-import com.xjtlu.campusspace.ui.note.NotePublishActivity;
+import com.xjtlu.campusspace.ui.SpaceUi;
 import com.xjtlu.campusspace.ui.widget.TimelineView;
-
 import java.util.List;
 
-/** 页面 2：教室详情 */
 public class RoomDetailActivity extends AppCompatActivity {
-
     public static final String EXTRA_SPACE_ID = "space_id";
-
-    private static final int[] DAY_OFFSETS = {-1, 0, 1, 2};
-
     private Repo repo;
     private Space space;
-    private int dayOffset = 0;
-
+    private int dayOffset;
     private TimelineView timeline;
-    private TextView tvStatus;
-    private ChipGroup chipsDay;
-    private NoteAdapter noteAdapter;
+    private TextView status;
+    private ChipGroup days;
+    private NoteAdapter notes;
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    @Override protected void onCreate(@Nullable Bundle saved) {
+        super.onCreate(saved);
         setContentView(R.layout.activity_room_detail);
-
+        if (saved != null) dayOffset = saved.getInt("day_offset", 0);
         repo = Repo.get(this);
-        String id = getIntent().getStringExtra(EXTRA_SPACE_ID);
-        space = repo.spaceOf(id);
-        if (space == null) {
-            finish();
-            return;
-        }
-
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        toolbar.setTitle(space.name);
-        toolbar.setNavigationOnClickListener(v -> finish());
-
-        TextView title = findViewById(R.id.tv_title);
-        title.setText(space.name);
-
-        TextView meta = findViewById(R.id.tv_meta);
-        String size = "LARGE".equals(space.size) ? "大教室" : "小教室";
-        String extra = space.isDiscussionArea() ? " · 讨论区" : "";
-        meta.setText(String.format("%s · %dF · 可容纳 %d 人 · %s%s",
-                space.building, space.floor, space.capacity, size, extra));
-
-        ChipGroup chipsFac = findViewById(R.id.chips_fac);
-        for (String f : space.facilityList()) {
-            Chip c = new Chip(this);
-            c.setText(f);
-            c.setCheckable(false);
-            c.setClickable(false);
-            chipsFac.addView(c);
-        }
-
+        ((MaterialToolbar)findViewById(R.id.toolbar)).setNavigationOnClickListener(v -> finish());
         timeline = findViewById(R.id.timeline);
-        tvStatus = findViewById(R.id.tv_status);
-        chipsDay = findViewById(R.id.chips_day);
-
-        RecyclerView rvNotes = findViewById(R.id.rv_notes);
-        rvNotes.setLayoutManager(new LinearLayoutManager(this));
-        noteAdapter = new NoteAdapter(true);
-        rvNotes.setAdapter(noteAdapter);
-
-        buildDayChips();
-
-        findViewById(R.id.tv_input).setOnClickListener(v -> openPublish());
-        findViewById(R.id.tv_send).setOnClickListener(v -> openPublish());
-
-        render();
+        status = findViewById(R.id.tv_status);
+        days = findViewById(R.id.chips_day);
+        RecyclerView rv = findViewById(R.id.rv_notes);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        notes = new NoteAdapter(true); rv.setAdapter(notes);
+        findViewById(R.id.tv_input).setOnClickListener(v -> publish());
+        findViewById(R.id.tv_send).setOnClickListener(v -> publish());
+        status.setText("正在加载空间数据…");
+        load();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (space != null) render();
+    private void load() {
+        repo.ensureLoaded(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (!repo.isLoaded()) {
+                status.setText("空间数据加载失败，点击重试\n" + repo.getLoadError());
+                status.setOnClickListener(v -> load()); return;
+            }
+            status.setOnClickListener(null);
+            space = repo.spaceOf(getIntent().getStringExtra(EXTRA_SPACE_ID));
+            if (space == null) { status.setText("找不到这个空间，请返回列表重选"); return; }
+            ((MaterialToolbar)findViewById(R.id.toolbar)).setTitle(space.name);
+            ((TextView)findViewById(R.id.tv_title)).setText(space.name);
+            ((TextView)findViewById(R.id.tv_meta)).setText(SpaceUi.subtitle(space) + "\n" + repo.dataLabel());
+            ChipGroup facilities = findViewById(R.id.chips_fac);
+            facilities.removeAllViews();
+            for (String label : space.facilityList()) {
+                Chip chip = new Chip(this); chip.setText(label); chip.setClickable(false);
+                facilities.addView(chip);
+            }
+            buildDays(); render();
+        });
     }
 
-    private void openPublish() {
-        Intent i = new Intent(this, NotePublishActivity.class);
-        i.putExtra(NotePublishActivity.EXTRA_TARGET_TYPE, Note.T_SPACE);
-        i.putExtra(NotePublishActivity.EXTRA_TARGET_ID, space.id);
-        i.putExtra(NotePublishActivity.EXTRA_TARGET_NAME, space.name);
-        startActivity(i);
+    @Override protected void onResume() { super.onResume(); if (space != null) load(); }
+    @Override protected void onSaveInstanceState(@androidx.annotation.NonNull Bundle out) {
+        out.putInt("day_offset", dayOffset); super.onSaveInstanceState(out);
     }
+    private void publish() { if (space != null) SpaceUi.publish(this, space.id, null); }
 
-    private void buildDayChips() {
-        chipsDay.removeAllViews();
-        for (int off : DAY_OFFSETS) {
-            Chip c = new Chip(this);
-            c.setText(TimeProvider.dayLabel(off));
-            c.setCheckable(true);
-            c.setChecked(off == dayOffset);
-            c.setOnClickListener(v -> v.post(() -> {
-                dayOffset = off;
-                buildDayChips();
-                render();
-            }));
-            chipsDay.addView(c);
+    private void buildDays() {
+        days.removeAllViews();
+        for (int off : new int[]{-1, 0, 1, 2}) {
+            Chip chip = new Chip(this); chip.setText(TimeProvider.dayLabel(off));
+            chip.setCheckable(true); chip.setChecked(off == dayOffset);
+            chip.setOnClickListener(v -> { dayOffset = off; buildDays(); render(); });
+            days.addView(chip);
         }
     }
 
     private void render() {
-        int isoDay = TimeProvider.dayOfWeekWithOffset(dayOffset);
-        List<Lecture> lectures = repo.lecturesOf(space.id, isoDay);
-
-        timeline.setLectures(lectures);
-        timeline.setShowNowLine(dayOffset == 0);
-
-        int now = TimeProvider.minuteOfDay();
-        if (dayOffset == 0) {
-            StatusCalculator.State st = StatusCalculator.of(lectures, now);
-            Integer endMin = StatusCalculator.currentEndMin(lectures, now);
+        boolean known = repo.hasSchedule(space.id, dayOffset);
+        List<Lecture> lectures = repo.lecturesOn(space.id, dayOffset);
+        timeline.setLectures(lectures); timeline.setDataKnown(known); timeline.setShowNowLine(dayOffset == 0);
+        if (!known) status.setText(TimeProvider.dayLabel(dayOffset) + "暂无有效课表，状态未知");
+        else if (dayOffset != 0) status.setText(TimeProvider.dayLabel(dayOffset) + "共 " + lectures.size() + " 节课 · 仅反映课表安排");
+        else {
+            int now = TimeProvider.minuteOfDay();
+            StatusCalculator.State state = StatusCalculator.of(lectures, now);
+            Integer end = StatusCalculator.currentEndMin(lectures, now);
             Lecture next = StatusCalculator.nextLecture(lectures, now);
-
-            if (st == StatusCalculator.State.IN_CLASS && endMin != null) {
-                tvStatus.setText(String.format("%s 上课中，%s 下课（还有 %d 分钟）",
-                        TimeProvider.todayLabel(), TimeText.hhmm(endMin), endMin - now));
-            } else if (next != null) {
-                String when = st == StatusCalculator.State.SOON ? "即将上课" : "现在空闲";
-                tvStatus.setText(String.format("%s，%s 有课（%s，%s）", when,
-                        TimeText.hhmm(next.startMin), next.course, TimeProvider.todayLabel()));
-            } else {
-                tvStatus.setText("今天没有排课，全天可用");
-            }
-        } else {
-            tvStatus.setText(String.format("%s 共 %d 节课", TimeProvider.dayLabel(dayOffset),
-                    lectures.size()));
+            if (state == StatusCalculator.State.IN_CLASS && end != null)
+                status.setText("上课中，" + TimeText.hhmm(end) + " 下课（还有 " + (end - now) + " 分钟）");
+            else if (next != null) status.setText((state == StatusCalculator.State.SOON ? "即将上课" : "当前为课表空档")
+                    + " · " + TimeText.hhmm(next.startMin) + " " + next.course);
+            else status.setText("今天余下时间未排课 · 请以现场使用情况为准");
         }
-
         repo.notesOf(Note.T_SPACE, space.id, rows -> {
-            if (isFinishing()) return;
-            noteAdapter.setItems(rows);
+            if (!isFinishing() && !isDestroyed()) notes.setItems(rows);
         });
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == android.R.id.home) {
-            finish();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }

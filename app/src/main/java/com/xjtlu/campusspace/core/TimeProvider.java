@@ -1,6 +1,7 @@
 package com.xjtlu.campusspace.core;
 
 import java.util.Calendar;
+import java.util.TimeZone;
 
 /**
  * 当前时间抽象。
@@ -31,7 +32,7 @@ public final class TimeProvider {
     }
 
     private static Calendar cal() {
-        Calendar c = Calendar.getInstance();
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Asia/Shanghai"));
         c.setTimeInMillis(now());
         return c;
     }

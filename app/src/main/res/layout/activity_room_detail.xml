@@ -108,7 +108,7 @@
                 android:background="@android:color/white"
                 android:paddingHorizontal="14dp"
                 android:paddingBottom="10dp"
-                android:text="灰 = 空闲　蓝 = 有课　红线 = 现在"
+                android:text="灰 = 课表空档　蓝 = 有课　斜线 = 未知　红线 = 现在"
                 android:textColor="#9AA1AE"
                 android:textSize="10sp" />
 
@@ -118,7 +118,7 @@
                 android:layout_marginTop="10dp"
                 android:paddingHorizontal="14dp"
                 android:paddingBottom="4dp"
-                android:text="这间教室的纸条"
+                android:text="这个空间的纸条"
                 android:textColor="@color/text_primary"
                 android:textSize="12sp"
                 android:textStyle="bold" />

@@ -5,6 +5,7 @@ public class BookableVM {
 
     public static final String MODE_SLOTS = "SLOTS";
     public static final String MODE_SEATS = "SEATS";
+    public static final String MODE_TIMELINE = "TIMELINE";
 
     public String id = "";
     public String title = "";
@@ -13,6 +14,8 @@ public class BookableVM {
     public String statText = "";
     public int statColor = 0xFF0E9F6E;
     public String bookingUrl = "";
+    public String groupId = "";
+    public String spaceId = "";
     /** SLOTS = 时段列表，SEATS = 座位网格 */
     public String mode = MODE_SLOTS;
 

@@ -1,24 +1,21 @@
 package com.xjtlu.campusspace.data.entity;
 
-import androidx.annotation.NonNull;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-
 /**
  * 教室 / 公共空间。
  * subType = DISCUSSION_AREA 表示这间小教室同时属于「讨论区」分类。
  */
-@Entity(tableName = "spaces")
 public class Space {
 
     public static final String SUB_CLASSROOM = "CLASSROOM";
     public static final String SUB_DISCUSSION_AREA = "DISCUSSION_AREA";
 
-    @PrimaryKey
-    @NonNull
     public String id = "";
     public String building = "";
     public int floor;
+    public String floorCode = "";
+    public String type = "";
+    public String locationHint = "";
+    public boolean showInPublicList;
     public String name = "";
     /** LARGE / SMALL */
     public String size = "";
@@ -30,7 +27,7 @@ public class Space {
     public String facilities = "";
 
     public boolean isDiscussionArea() {
-        return SUB_DISCUSSION_AREA.equals(subType);
+        return SUB_DISCUSSION_AREA.equals(subType) || SUB_DISCUSSION_AREA.equals(type);
     }
 
     public String[] facilityList() {

@@ -7,6 +7,25 @@
     android:orientation="vertical"
     android:background="@color/page_bg">
 
+    <TextView
+        android:id="@+id/tv_data_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#FFF3DB"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="6dp"
+        android:text="正在加载校园空间数据…"
+        android:textColor="#765A23"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/tv_load_state"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="18dp"
+        android:textColor="@color/text_primary"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/container"
         android:layout_width="match_parent"

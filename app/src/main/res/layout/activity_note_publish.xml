@@ -72,7 +72,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:hint="说点什么…">
+                android:hint="说点什么…"
+                app:counterEnabled="true"
+                app:counterMaxLength="2000">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_content"
@@ -111,6 +113,15 @@
                     android:textSize="13sp" />
             </FrameLayout>
 
+            <TextView
+                android:id="@+id/tv_image_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingVertical="8dp"
+                android:text="最多 4 张图片"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -130,7 +141,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:clickable="false"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:maxWidth="290dp"
                     tools:text="#FB-101" />
             </LinearLayout>
 
@@ -138,7 +151,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
-                android:text="纸条会绑定到当前查看的空间，方便别人在这里看到。"
+                android:text="发布前必须选择具体空间；点击位置标签可更换。设备纸条也会关联其所在空间。"
                 android:textColor="#9AA1AE"
                 android:textSize="11sp" />
         </LinearLayout>

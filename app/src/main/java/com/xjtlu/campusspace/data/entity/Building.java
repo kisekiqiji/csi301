@@ -1,13 +1,8 @@
 package com.xjtlu.campusspace.data.entity;
 
-import androidx.annotation.NonNull;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-
-@Entity(tableName = "buildings")
+/** UI projection of a normalized building row. */
 public class Building {
-    @PrimaryKey
-    @NonNull
+    public String id = "";
     public String code = "";
     public String name = "";
     public String campus = "";

@@ -85,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:background="@android:color/white"
-                android:columnCount="6"
+                android:columnCount="1"
                 android:padding="10dp"
                 android:visibility="gone" />
 
@@ -96,7 +96,7 @@
                 android:background="@android:color/white"
                 android:paddingHorizontal="14dp"
                 android:paddingVertical="8dp"
-                android:text="绿=Available　黄绿=Part Free　黄=Reserved　灰=Unavailable"
+                android:text="绿=Available　黄绿=Part Free　黄=Reserved　灰=Unavailable　蓝灰=未知"
                 android:textColor="#9AA1AE"
                 android:textSize="10sp"
                 android:visibility="gone" />
@@ -126,7 +126,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/white"
+        android:orientation="vertical"
         android:padding="10dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_note"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="给这个空间留张纸条" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_reserve"

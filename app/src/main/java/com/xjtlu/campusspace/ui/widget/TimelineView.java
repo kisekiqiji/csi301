@@ -27,6 +27,7 @@ public class TimelineView extends View {
 
     private List<Lecture> lectures = new ArrayList<>();
     private boolean showNowLine = true;
+    private boolean dataKnown = true;
 
     private final Paint paintFree = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint paintBusy = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -67,6 +68,12 @@ public class TimelineView extends View {
         invalidate();
     }
 
+    public void setDataKnown(boolean known) {
+        dataKnown = known;
+        setContentDescription(known ? "教室课表时间轴" : "暂无有效课表，状态未知");
+        invalidate();
+    }
+
     /** 看历史/未来日期时不需要"现在"红线 */
     public void setShowNowLine(boolean show) {
         this.showNowLine = show;
@@ -94,7 +101,16 @@ public class TimelineView extends View {
 
         canvas.drawRect(0, barTop, getWidth(), barBottom, paintFree);
 
-        for (Lecture l : lectures) {
+        if (!dataKnown) {
+            canvas.save();
+            canvas.clipRect(0, barTop, getWidth(), barBottom);
+            for (float x = -barBottom; x < getWidth(); x += dp(12)) {
+                canvas.drawLine(x, barBottom, x + barBottom, 0, paintTick);
+            }
+            canvas.restore();
+        }
+
+        for (Lecture l : dataKnown ? lectures : new ArrayList<Lecture>()) {
             float left = (l.startMin - START_H * 60) * u;
             float right = (l.endMin - START_H * 60) * u;
             left = Math.max(left, 0);
@@ -122,7 +138,7 @@ public class TimelineView extends View {
             }
         }
 
-        if (showNowLine) {
+        if (showNowLine && dataKnown) {
             int nowMin = TimeProvider.minuteOfDay();
             if (nowMin >= START_H * 60 && nowMin <= END_H * 60) {
                 float x = (nowMin - START_H * 60) * u;

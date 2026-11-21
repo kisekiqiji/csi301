@@ -8,6 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.xjtlu.campusspace.R;
@@ -66,11 +67,30 @@ public class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.VH> {
         h.time.setText(TimeText.ago(n.createdAt));
         h.content.setText(n.content);
 
-        if (showThumb && n.imagePath != null) {
-            Bitmap bmp = ImageStore.loadThumb(n.imagePath, 240);
+        String firstImage = n.imagePaths != null && !n.imagePaths.isEmpty() ? n.imagePaths.get(0) : n.imagePath;
+        h.thumb.setOnClickListener(null);
+        h.thumb.setImageDrawable(null);
+        if (showThumb && firstImage != null) {
+            Bitmap bmp = ImageStore.loadThumb(firstImage, 240);
             if (bmp != null) {
                 h.thumb.setImageBitmap(bmp);
                 h.thumb.setVisibility(View.VISIBLE);
+                int count = n.imagePaths == null || n.imagePaths.isEmpty() ? 1 : n.imagePaths.size();
+                h.thumb.setContentDescription("纸条图片，共 " + count + " 张，点击查看");
+                h.thumb.setOnClickListener(v -> {
+                    List<String> paths = new ArrayList<>();
+                    if (n.imagePaths != null && !n.imagePaths.isEmpty()) paths.addAll(n.imagePaths);
+                    else paths.add(firstImage);
+                    String[] labels = new String[paths.size()];
+                    for (int i = 0; i < labels.length; i++) labels[i] = "图片 " + (i + 1);
+                    new AlertDialog.Builder(v.getContext()).setTitle("纸条图片")
+                            .setItems(labels, (dialog, which) -> {
+                                ImageView image = new ImageView(v.getContext());
+                                image.setAdjustViewBounds(true);
+                                image.setImageBitmap(ImageStore.loadThumb(paths.get(which), 1000));
+                                new AlertDialog.Builder(v.getContext()).setView(image).setPositiveButton("关闭", null).show();
+                            }).show();
+                });
             } else {
                 h.thumb.setVisibility(View.GONE);
             }

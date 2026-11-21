@@ -65,7 +65,7 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
         h.name.setText(s.name);
         h.sub.setText(it.subtitle);
 
-        String fac = s.facilities.replace(",", " · ");
+        String fac = s.facilities == null ? "" : s.facilities.replace(",", " · ");
         h.fac.setText(fac);
         h.fac.setVisibility(fac.isEmpty() ? View.GONE : View.VISIBLE);
 
@@ -73,13 +73,16 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
         String label;
         if (it.state == StatusCalculator.State.IN_CLASS) {
             color = h.itemView.getContext().getResources().getColor(R.color.state_busy, null);
-            label = "上课中";
+            label = "CLASSROOM".equals(s.type) || s.isDiscussionArea() ? "上课中" : "暂无空余";
         } else if (it.state == StatusCalculator.State.SOON) {
             color = h.itemView.getContext().getResources().getColor(R.color.state_soon, null);
             label = "即将上课";
-        } else {
+        } else if (it.state == StatusCalculator.State.FREE) {
             color = h.itemView.getContext().getResources().getColor(R.color.state_free, null);
-            label = "空闲中";
+            label = "CLASSROOM".equals(s.type) || s.isDiscussionArea() ? "空闲中" : "有空余";
+        } else {
+            color = 0xFF7D8592;
+            label = "状态未知";
         }
         Pills.apply(h.state, color);
         h.state.setText(label);

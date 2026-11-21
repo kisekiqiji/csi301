@@ -12,7 +12,7 @@ import java.util.List;
 public final class StatusCalculator {
 
     /** 空闲 / 即将上课（30 分钟内） / 上课中 */
-    public enum State { FREE, SOON, IN_CLASS }
+    public enum State { FREE, SOON, IN_CLASS, UNKNOWN }
 
     private static final int SOON_WINDOW = 30;
 
@@ -20,7 +20,8 @@ public final class StatusCalculator {
     }
 
     public static State of(List<Lecture> todayLectures, int nowMin) {
-        if (todayLectures == null || todayLectures.isEmpty()) return State.FREE;
+        if (todayLectures == null) return State.UNKNOWN;
+        if (todayLectures.isEmpty()) return State.FREE;
 
         for (Lecture l : todayLectures) {
             if (nowMin >= l.startMin && nowMin < l.endMin) return State.IN_CLASS;
@@ -29,6 +30,10 @@ public final class StatusCalculator {
             if (l.startMin > nowMin && l.startMin - nowMin <= SOON_WINDOW) return State.SOON;
         }
         return State.FREE;
+    }
+
+    public static State of(List<Lecture> lectures, int nowMin, boolean hasCoverage) {
+        return hasCoverage ? of(lectures, nowMin) : State.UNKNOWN;
     }
 
     /** 现在这节课几点结束；没在上课返回 null */

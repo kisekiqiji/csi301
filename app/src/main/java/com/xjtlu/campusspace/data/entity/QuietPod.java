@@ -1,15 +1,10 @@
 package com.xjtlu.campusspace.data.entity;
 
-import androidx.annotation.NonNull;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-
-/** 静音仓（可预约，跳官方系统）。单独一张表，不并入教室。 */
-@Entity(tableName = "quiet_pods")
+/** 静音仓界面投影；持久化数据来自 spaces 与 booking_resources。 */
 public class QuietPod {
-    @PrimaryKey
-    @NonNull
     public String id = "";
+    public String spaceId = "";
+    public String groupId = "";
     public String zone = "";
     public String building = "";
     public int floor;
