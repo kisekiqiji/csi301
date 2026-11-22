@@ -18,7 +18,7 @@ import com.xjtlu.campusspace.data.store.Rows;
                 Rows.DataSource.class, Rows.SyncRun.class, Rows.User.class, Rows.Note.class,
                 Rows.NoteImage.class
         },
-        version = 2,
+        version = 3,
         exportSchema = true
 )
 public abstract class AppDatabase extends RoomDatabase {
@@ -35,13 +35,15 @@ public abstract class AppDatabase extends RoomDatabase {
                                     context.getApplicationContext(),
                                     AppDatabase.class,
                                     "campus.db")
-                            .addMigrations(LegacyMigration.MIGRATION_1_2)
+                            .addMigrations(LegacyMigration.MIGRATION_1_2, AuthMigration.MIGRATION_2_3)
                             .addCallback(new Callback() {
                                 @Override public void onCreate(@NonNull SupportSQLiteDatabase db) {
                                     SchemaV2.installTriggers(db);
+                                    AuthMigration.installTriggers(db);
                                 }
                                 @Override public void onOpen(@NonNull SupportSQLiteDatabase db) {
                                     SchemaV2.installTriggers(db);
+                                    AuthMigration.installTriggers(db);
                                 }
                             })
                             .build();

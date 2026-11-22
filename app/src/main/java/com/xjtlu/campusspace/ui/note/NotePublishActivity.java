@@ -1,6 +1,7 @@
 package com.xjtlu.campusspace.ui.note;
 
 import android.graphics.Bitmap;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -23,6 +24,8 @@ import com.google.android.material.chip.Chip;
 import com.xjtlu.campusspace.R;
 import com.xjtlu.campusspace.core.TimeProvider;
 import com.xjtlu.campusspace.data.Repo;
+import com.xjtlu.campusspace.data.LocalAuth;
+import com.xjtlu.campusspace.ui.account.AccountActivity;
 import com.xjtlu.campusspace.data.entity.Building;
 import com.xjtlu.campusspace.data.entity.Facility;
 import com.xjtlu.campusspace.data.entity.Note;
@@ -51,6 +54,13 @@ public class NotePublishActivity extends AppCompatActivity {
     private Chip location;
     private boolean publishing, copying, ready, prompted;
     private PublishState publishState;
+    private boolean accountPending, freshDraft;
+    private final ActivityResultLauncher<Intent> account = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                accountPending = false;
+                if (LocalAuth.get(this).currentUser() == null) { finish(); return; }
+                loadSpace();
+            });
 
     /** Retain an in-flight write across rotation without retaining the Activity. */
     public static class PublishState extends ViewModel {
@@ -88,6 +98,8 @@ public class NotePublishActivity extends AppCompatActivity {
 
     @Override protected void onCreate(@Nullable Bundle saved) {
         super.onCreate(saved); setContentView(R.layout.activity_note_publish);
+        accountPending = saved != null && saved.getBoolean("account_pending");
+        freshDraft = saved == null || saved.getBoolean("fresh_draft");
         repo = Repo.get(this);
         content = findViewById(R.id.et_content);
         preview = findViewById(R.id.iv_preview);
@@ -129,6 +141,22 @@ public class NotePublishActivity extends AppCompatActivity {
         findViewById(R.id.btn_publish).setOnClickListener(v -> publish());
         updatePublishButton();
         if (!imagePaths.isEmpty()) showImages(ImageStore.loadThumb(imagePaths.get(0), 600));
+        ensureAccount();
+    }
+
+    private void ensureAccount() {
+        LocalAuth.get(this).ensureLoaded(() -> {
+            if (isFinishing() || isDestroyed()) return;
+            if (LocalAuth.get(this).currentUser() != null) { loadSpace(); return; }
+            if (!accountPending) {
+                accountPending = true;
+                toast("登录本机账号后即可发布纸条");
+                account.launch(new Intent(this, AccountActivity.class));
+            }
+        });
+    }
+
+    private void loadSpace() {
         repo.ensureLoaded(() -> {
             if (isFinishing() || isDestroyed()) return;
             ready = repo.isLoaded();
@@ -145,8 +173,9 @@ public class NotePublishActivity extends AppCompatActivity {
                 Facility equipment = repo.facilityOf(equipmentId);
                 if (equipment == null || !equipment.spaceId.equals(spaceId)) {
                     toast("设备位置无效，请重新选择"); equipmentId = null;
-                } else if (saved == null) ((RadioGroup)findViewById(R.id.group_category)).check(R.id.rb_repair);
+                } else if (freshDraft) ((RadioGroup)findViewById(R.id.group_category)).check(R.id.rb_repair);
             }
+            freshDraft = false;
             showLocation(); updatePublishButton();
             if (spaceId == null && !prompted) { prompted = true; chooseBuilding(); }
         });
@@ -198,6 +227,7 @@ public class NotePublishActivity extends AppCompatActivity {
     }
     private void publish() {
         if (!ready || publishing || copying) return;
+        if (LocalAuth.get(this).currentUser() == null) { ensureAccount(); return; }
         Space space = repo.spaceOf(spaceId);
         if (space == null) { toast("请先选择具体空间"); chooseBuilding(); return; }
         if (equipmentId != null) {
@@ -226,6 +256,7 @@ public class NotePublishActivity extends AppCompatActivity {
     @Override protected void onSaveInstanceState(@NonNull Bundle out) {
         out.putString("space_id", spaceId); out.putString("equipment_id", equipmentId);
         out.putString("draft_id", draftId); out.putStringArrayList("images", imagePaths); out.putBoolean("prompted", prompted);
+        out.putBoolean("account_pending", accountPending); out.putBoolean("fresh_draft", freshDraft);
         super.onSaveInstanceState(out);
     }
     @Override protected void onDestroy() { imagesIo.shutdown(); super.onDestroy(); }

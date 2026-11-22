@@ -4,6 +4,7 @@ import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.annotation.Nullable;
 import com.xjtlu.campusspace.data.store.Rows;
 import java.util.List;
 
@@ -25,11 +26,19 @@ public interface AppDao {
     @Query("SELECT * FROM data_sources ORDER BY code") List<Rows.DataSource> dataSources();
     @Query("SELECT * FROM sync_runs ORDER BY fetched_at DESC, id") List<Rows.SyncRun> syncRuns();
     @Query("SELECT * FROM users ORDER BY id") List<Rows.User> users();
+    @Nullable @Query("SELECT * FROM users WHERE id = :id LIMIT 1") Rows.User userById(String id);
+    @Nullable @Query("SELECT * FROM users WHERE username = :username COLLATE NOCASE LIMIT 1") Rows.User userByUsername(String username);
+    @Query("UPDATE users SET failed_attempts = :failedAttempts, locked_until = :lockedUntil WHERE id = :id AND username IS NOT NULL")
+    int updateLoginState(String id, int failedAttempts, long lockedUntil);
+    @Query("UPDATE users SET display_name = :displayName WHERE id = :id AND username IS NOT NULL")
+    int updateAccountDisplayName(String id, String displayName);
     @Query("SELECT * FROM notes ORDER BY created_at DESC, id") List<Rows.Note> notes();
     @Query("SELECT * FROM note_images ORDER BY note_id, sort_order") List<Rows.NoteImage> noteImages();
     @Query("SELECT * FROM notes WHERE status = 'VISIBLE' ORDER BY created_at DESC, id LIMIT :limit") List<Rows.Note> latestNotes(int limit);
     @Query("SELECT * FROM notes WHERE space_id = :spaceId AND status = 'VISIBLE' ORDER BY created_at DESC, id") List<Rows.Note> notesOfSpace(String spaceId);
     @Query("SELECT * FROM notes WHERE equipment_id = :equipmentId AND status = 'VISIBLE' ORDER BY created_at DESC, id") List<Rows.Note> notesOfEquipment(String equipmentId);
+    @Query("SELECT * FROM notes WHERE author_id = :authorId AND status = 'VISIBLE' ORDER BY created_at DESC, id") List<Rows.Note> notesOfAuthor(String authorId);
+    @Query("SELECT COUNT(*) FROM notes WHERE author_id = :authorId AND status = 'VISIBLE'") int countNotesOfAuthor(String authorId);
 
     @Insert(onConflict = OnConflictStrategy.ABORT) void insertBuildings(List<Rows.Building> rows);
     @Insert(onConflict = OnConflictStrategy.ABORT) void insertFloors(List<Rows.Floor> rows);

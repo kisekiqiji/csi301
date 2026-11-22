@@ -1,5 +1,5 @@
--- CampusSpace v2: schema only, exported from the verified Android database.
--- Includes foreign keys, indexes, and the integrity triggers used by Room.
+-- CampusSpace v3: schema only, exported from the verified Android database.
+-- Includes local account fields, foreign keys, indexes, and integrity triggers.
 PRAGMA foreign_keys = ON;
 BEGIN TRANSACTION;
 
@@ -27,7 +27,7 @@ CREATE TABLE `data_sources` (`id` TEXT NOT NULL, `code` TEXT NOT NULL, `name` TE
 
 CREATE TABLE `sync_runs` (`id` TEXT NOT NULL, `source_id` TEXT NOT NULL, `data_kind` TEXT NOT NULL, `scope_key` TEXT NOT NULL, `window_start` INTEGER NOT NULL, `window_end` INTEGER NOT NULL, `fetched_at` INTEGER NOT NULL, `status` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`source_id`) REFERENCES `data_sources`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT );
 
-CREATE TABLE `users` (`id` TEXT NOT NULL, `auth_subject` TEXT, `display_name` TEXT NOT NULL, PRIMARY KEY(`id`));
+CREATE TABLE `users` (`id` TEXT NOT NULL, `auth_subject` TEXT, `display_name` TEXT NOT NULL, `username` TEXT COLLATE NOCASE, `password_hash` TEXT, `password_salt` TEXT, `password_algorithm` TEXT, `password_iterations` INTEGER NOT NULL DEFAULT 0, `created_at` INTEGER NOT NULL DEFAULT 0, `failed_attempts` INTEGER NOT NULL DEFAULT 0, `locked_until` INTEGER NOT NULL DEFAULT 0, `rules_accepted_at` INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(`id`));
 
 CREATE TABLE `notes` (`id` TEXT NOT NULL, `space_id` TEXT NOT NULL, `author_id` TEXT NOT NULL, `equipment_id` TEXT, `type` TEXT NOT NULL, `body` TEXT NOT NULL, `created_at` INTEGER NOT NULL, `status` TEXT NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`space_id`) REFERENCES `spaces`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`author_id`) REFERENCES `users`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`equipment_id`, `space_id`) REFERENCES `equipment`(`id`, `space_id`) ON UPDATE NO ACTION ON DELETE RESTRICT );
 
@@ -70,6 +70,8 @@ CREATE UNIQUE INDEX `index_data_sources_code` ON `data_sources` (`code`);
 CREATE INDEX `index_sync_runs_source_id_data_kind_scope_key_window_start_window_end_fetched_at` ON `sync_runs` (`source_id`, `data_kind`, `scope_key`, `window_start`, `window_end`, `fetched_at`);
 
 CREATE UNIQUE INDEX `index_users_auth_subject` ON `users` (`auth_subject`);
+
+CREATE UNIQUE INDEX `index_users_username` ON `users` (`username`);
 
 CREATE INDEX `index_notes_space_id_created_at` ON `notes` (`space_id`, `created_at`);
 
@@ -200,5 +202,11 @@ CREATE TRIGGER `guard_note_images_values_update` BEFORE UPDATE ON `note_images` 
 CREATE TRIGGER `guard_sync_runs_references_insert` BEFORE INSERT ON `sync_runs` WHEN EXISTS (SELECT 1 FROM classroom_events e WHERE e.sync_run_id = NEW.id AND (NEW.data_kind != 'EVENTS' OR NEW.scope_key != e.space_id OR NEW.window_start > e.starts_at OR NEW.window_end < e.ends_at)) OR EXISTS (SELECT 1 FROM booking_slots b JOIN booking_resources r ON r.id = b.resource_id WHERE b.sync_run_id = NEW.id AND (NEW.data_kind != 'SLOTS' OR NEW.scope_key != r.group_id OR NEW.source_id != r.source_id OR NEW.window_start > b.starts_at OR NEW.window_end < b.ends_at)) OR EXISTS (SELECT 1 FROM seat_states s JOIN booking_resources r ON r.id = s.resource_id WHERE s.sync_run_id = NEW.id AND (NEW.data_kind != 'SEATS' OR NEW.scope_key != r.group_id OR NEW.source_id != r.source_id)) BEGIN SELECT RAISE(ABORT, 'Invalid sync_runs references'); END;
 
 CREATE TRIGGER `guard_sync_runs_references_update` BEFORE UPDATE ON `sync_runs` WHEN EXISTS (SELECT 1 FROM classroom_events e WHERE e.sync_run_id = NEW.id AND (NEW.data_kind != 'EVENTS' OR NEW.scope_key != e.space_id OR NEW.window_start > e.starts_at OR NEW.window_end < e.ends_at)) OR EXISTS (SELECT 1 FROM booking_slots b JOIN booking_resources r ON r.id = b.resource_id WHERE b.sync_run_id = NEW.id AND (NEW.data_kind != 'SLOTS' OR NEW.scope_key != r.group_id OR NEW.source_id != r.source_id OR NEW.window_start > b.starts_at OR NEW.window_end < b.ends_at)) OR EXISTS (SELECT 1 FROM seat_states s JOIN booking_resources r ON r.id = s.resource_id WHERE s.sync_run_id = NEW.id AND (NEW.data_kind != 'SEATS' OR NEW.scope_key != r.group_id OR NEW.source_id != r.source_id)) BEGIN SELECT RAISE(ABORT, 'Invalid sync_runs references'); END;
+
+CREATE TRIGGER guard_users_account_insert BEFORE INSERT ON users WHEN NEW.password_iterations < 0 OR NEW.failed_attempts < 0 OR NEW.failed_attempts > 5 OR NEW.created_at < 0 OR NEW.locked_until < 0 OR NEW.rules_accepted_at < 0 OR (NEW.username IS NULL AND (NEW.password_hash IS NOT NULL OR NEW.password_salt IS NOT NULL OR NEW.password_algorithm IS NOT NULL OR NEW.password_iterations != 0)) OR (NEW.username IS NOT NULL AND (length(NEW.username) < 3 OR length(NEW.username) > 24 OR NEW.username GLOB '*[^A-Za-z0-9_]*' OR length(trim(NEW.display_name)) < 1 OR length(trim(NEW.display_name)) > 24 OR NEW.password_hash IS NULL OR length(NEW.password_hash) != 64 OR NEW.password_hash GLOB '*[^0-9a-f]*' OR NEW.password_salt IS NULL OR length(NEW.password_salt) != 32 OR NEW.password_salt GLOB '*[^0-9a-f]*' OR NEW.password_algorithm IS NULL OR NEW.password_algorithm NOT IN ('PBKDF2WithHmacSHA256','PBKDF2WithHmacSHA1') OR NEW.password_iterations < 1 OR NEW.password_iterations > 2000000 OR NEW.created_at <= 0 OR NEW.rules_accepted_at <= 0)) BEGIN SELECT RAISE(ABORT, 'Invalid local account'); END;
+
+CREATE TRIGGER guard_users_account_update BEFORE UPDATE ON users WHEN NEW.password_iterations < 0 OR NEW.failed_attempts < 0 OR NEW.failed_attempts > 5 OR NEW.created_at < 0 OR NEW.locked_until < 0 OR NEW.rules_accepted_at < 0 OR (NEW.username IS NULL AND (NEW.password_hash IS NOT NULL OR NEW.password_salt IS NOT NULL OR NEW.password_algorithm IS NOT NULL OR NEW.password_iterations != 0)) OR (NEW.username IS NOT NULL AND (length(NEW.username) < 3 OR length(NEW.username) > 24 OR NEW.username GLOB '*[^A-Za-z0-9_]*' OR length(trim(NEW.display_name)) < 1 OR length(trim(NEW.display_name)) > 24 OR NEW.password_hash IS NULL OR length(NEW.password_hash) != 64 OR NEW.password_hash GLOB '*[^0-9a-f]*' OR NEW.password_salt IS NULL OR length(NEW.password_salt) != 32 OR NEW.password_salt GLOB '*[^0-9a-f]*' OR NEW.password_algorithm IS NULL OR NEW.password_algorithm NOT IN ('PBKDF2WithHmacSHA256','PBKDF2WithHmacSHA1') OR NEW.password_iterations < 1 OR NEW.password_iterations > 2000000 OR NEW.created_at <= 0 OR NEW.rules_accepted_at <= 0)) BEGIN SELECT RAISE(ABORT, 'Invalid local account'); END;
+
+CREATE TRIGGER guard_users_preserve_legacy_author BEFORE UPDATE ON users WHEN OLD.username IS NULL AND NEW.username IS NOT NULL BEGIN SELECT RAISE(ABORT, 'Legacy authors cannot become login accounts'); END;
 
 COMMIT;

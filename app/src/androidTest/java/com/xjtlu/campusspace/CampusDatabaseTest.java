@@ -111,7 +111,7 @@ public class CampusDatabaseTest {
             old.setVersion(1);
         }
         db = Room.databaseBuilder(context, AppDatabase.class, migrationName).allowMainThreadQueries()
-                .addMigrations(LegacyMigration.MIGRATION_1_2).build();
+                .addMigrations(LegacyMigration.MIGRATION_1_2, AuthMigration.MIGRATION_2_3).build();
         assertEquals(2, db.dao().countNotes()); // Opening triggers Room's real schema comparison.
         Rows.Note roomNote = null, buildingNote = null;
         for (Rows.Note note : db.dao().notes()) {
@@ -125,7 +125,7 @@ public class CampusDatabaseTest {
         try (android.database.Cursor c = db.getOpenHelper().getWritableDatabase().query("PRAGMA foreign_key_check")) { assertFalse(c.moveToFirst()); }
     }
 
-    @Test public void repositoryProjectsDatedStatesAndSavesStableAnonymousImageNotes() throws Exception {
+    @Test public void repositoryProjectsDatedStatesAndSavesAccountImageNotes() throws Exception {
         Repo repo = Repo.get(context);
         CountDownLatch loaded = new CountDownLatch(1);
         repo.reload(loaded::countDown);
@@ -140,6 +140,16 @@ public class CampusDatabaseTest {
         assertTrue(repo.seatsOfGroup(group.id, 1).stream().allMatch(s -> "UNKNOWN".equals(s.status)));
         assertTrue(repo.hasSchedule("FB-101", 0));
 
+        LocalAuth auth = LocalAuth.get(context);
+        CountDownLatch accountReady = new CountDownLatch(1);
+        AtomicReference<String> accountError = new AtomicReference<>();
+        String username = "db_" + UUID.randomUUID().toString().substring(0, 12).replace("-", "");
+        auth.register(username, "数据库测试同学", "TestPass987".toCharArray(), true, new LocalAuth.Callback<Rows.User>() {
+            public void onSuccess(Rows.User user) { accountReady.countDown(); }
+            public void onError(String error) { accountError.set(error); accountReady.countDown(); }
+        });
+        assertTrue(accountReady.await(30, TimeUnit.SECONDS)); assertNull(accountError.get());
+
         com.xjtlu.campusspace.data.entity.Note first = new com.xjtlu.campusspace.data.entity.Note();
         first.id = "TEST-REPOSITORY-" + UUID.randomUUID(); first.spaceId = "FB-101";
         first.category = "空间碎碎念"; first.content = "数据库与页面投影集成检查";
@@ -150,7 +160,7 @@ public class CampusDatabaseTest {
         assertTrue(saved.await(10, TimeUnit.SECONDS)); assertNull(error.get());
         com.xjtlu.campusspace.data.entity.Note second = new com.xjtlu.campusspace.data.entity.Note();
         second.id = "TEST-REPOSITORY-" + UUID.randomUUID(); second.spaceId = "FB-101";
-        second.category = "失物招领"; second.content = "匿名身份保持稳定";
+        second.category = "失物招领"; second.content = "登录账号归属保持稳定";
         CountDownLatch savedAgain = new CountDownLatch(1);
         repo.addNote(second, savedAgain::countDown, message -> { error.set(message); savedAgain.countDown(); });
         assertTrue(savedAgain.await(10, TimeUnit.SECONDS)); assertNull(error.get()); assertEquals(first.authorId, second.authorId);
@@ -160,8 +170,19 @@ public class CampusDatabaseTest {
         assertTrue(read.await(10, TimeUnit.SECONDS));
         com.xjtlu.campusspace.data.entity.Note restored = notes.get().stream().filter(n -> first.id.equals(n.id)).findFirst().get();
         assertEquals(first.imagePaths, restored.imagePaths);
+        assertEquals(auth.currentUser().id, restored.authorId);
+        CountDownLatch mineRead = new CountDownLatch(1);
+        AtomicReference<List<com.xjtlu.campusspace.data.entity.Note>> mine = new AtomicReference<>();
+        repo.myNotes(rows -> { mine.set(rows); mineRead.countDown(); });
+        assertTrue(mineRead.await(10, TimeUnit.SECONDS)); assertEquals(2, mine.get().size());
+        CountDownLatch loggedOut = new CountDownLatch(1); auth.logout(loggedOut::countDown);
+        assertTrue(loggedOut.await(10, TimeUnit.SECONDS));
+        CountDownLatch denied = new CountDownLatch(1); error.set(null);
+        second.id = "TEST-DENIED-" + UUID.randomUUID();
+        repo.addNote(second, denied::countDown, message -> { error.set(message); denied.countDown(); });
+        assertTrue(denied.await(10, TimeUnit.SECONDS)); assertNotNull("Guest writes must be rejected", error.get());
         AppDatabase.get(context).getOpenHelper().getWritableDatabase().execSQL(
-                "DELETE FROM notes WHERE id IN (?, ?)", new Object[]{first.id, second.id});
+                "DELETE FROM notes WHERE author_id = ?", new Object[]{restored.authorId});
     }
 
     private int countType(String type) {

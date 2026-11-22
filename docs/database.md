@@ -1,8 +1,8 @@
 # CampusSpace 数据库与页面对应
 
-项目使用 Room 管理本地 SQLite，数据库文件为 `campus.db`，当前版本为 2。持久化模型位于 `data/store/Rows.java`，页面模型位于 `data/entity`，由 `Repo` 负责转换。完整字段与索引以 `app/schemas/com.xjtlu.campusspace.data.AppDatabase/2.json` 为准；附加数据校验由 `SchemaV2` 的 SQLite 触发器执行。
+项目使用 Room 管理本地 SQLite，数据库文件为 `campus.db`，当前版本为 3。持久化模型位于 `data/store/Rows.java`，页面模型位于 `data/entity`，由 `Repo` 负责转换。完整字段与索引以 `app/schemas/com.xjtlu.campusspace.data.AppDatabase/3.json` 为准；附加数据校验由 `SchemaV2` 与 `AuthMigration` 的 SQLite 触发器执行。
 
-[schema.sql](schema.sql) 是从通过 Android 验证的数据库导出的建库脚本，仅含结构：15 张表、24 个显式索引和 60 个完整性触发器，不含用户或演示记录。
+[schema.sql](schema.sql) 是从通过 Android 验证的数据库导出的建库脚本，仅含表、索引和完整性触发器，不含用户或演示记录。
 
 ## 表结构
 
@@ -22,7 +22,7 @@
 | seat_states | id, resource_id → booking_resources, sync_run_id → sync_runs, status, raw_status | 同批同资源唯一；查询窗口来自批次 |
 | data_sources | id, code, name, default_booking_url, is_demo | code 唯一；区分演示与实际数据来源 |
 | sync_runs | id, source_id → data_sources, data_kind, scope_key, window_start, window_end, fetched_at, status | 正有效时间窗口；数据类型和状态采用受控枚举 |
-| users | id, auth_subject 可空, display_name | auth_subject 非空时唯一；默认使用稳定的本地匿名身份 |
+| users | id, auth_subject 可空, display_name, username 可空, password_hash, password_salt, password_algorithm, password_iterations, created_at, failed_attempts, locked_until, rules_accepted_at | 本机用户名不区分大小写且唯一；旧匿名作者保持 username=NULL；密码加盐派生；限流与规则同意时间持久化 |
 | notes | id, space_id → spaces, author_id → users, equipment_id 可空, type, body, created_at, status | 正文非空；设备与空间通过复合外键保证一致；按空间/设备/时间建索引 |
 | note_images | id, note_id → notes, object_key, sort_order | 同纸条展示序号唯一；删除纸条时级联删除图片记录 |
 
@@ -66,7 +66,7 @@ erDiagram
 | 公共设备 | 饮水机、打印机取 equipment；休息处、开放座位区取 spaces；楼栋和楼层均从数据库生成 |
 | 纸条 | 具体空间下的 notes；设备入口可进一步筛 equipment_id；发布与图片记录保存采用事务 |
 
-全局发布没有具体空间时必须先选位置，禁止将 `FB` 这样的楼栋代码写入空间 ID。详情页自动带入空间，发布后返回刷新。匿名作者在同一安装中保持稳定，不增加登录流程。数据库与发布页支持最多 4 张图片，并按展示顺序保存。
+游客可以查询空间。发布前必须登录本机账号，再选择有效具体空间，禁止将 `FB` 这样的楼栋代码写入空间 ID。详情页自动带入空间，发布后返回刷新。纸条作者在写入事务中从会话取得，不接受页面伪造的 author_id。我的纸条按当前账号查询，退出后清空个人视图；旧匿名纸条继续保留，不自动归给新账号。数据库与发布页支持最多 4 张图片，并按展示顺序保存。
 
 ## 同步与未知状态
 
@@ -87,6 +87,8 @@ erDiagram
 ## v1 升级与验证
 
 版本 1 升级为 2 使用显式迁移，不再使用破坏性回退。旧周课表和相对预约时段转换为绝对日期，旧纸条正文、时间、昵称、图片路径保留。旧版误绑楼栋的纸条迁移到明确命名的楼栋公共区域，既保留内容也恢复有效外键。
+
+版本 2 升级为 3 为 users 增加本机账号字段，保留所有旧作者及纸条。新注册账号使用独立 ID，不能通过同名昵称认领旧纸条。账号规则与数据边界见 [本机账号说明](local-accounts.md)。
 
 验证命令：
 

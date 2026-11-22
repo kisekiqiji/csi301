@@ -10,7 +10,9 @@
     -->
 
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:fullBackupContent="@xml/backup_rules"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="西浦空间"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -30,6 +32,10 @@
         <activity
             android:name=".ui.home.RoomDetailActivity"
             android:exported="false" />
+
+        <activity android:name=".ui.home.BuildingSelectionActivity" android:exported="false" />
+        <activity android:name=".ui.account.AccountActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".ui.booking.BookingDetailActivity"

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_margin="6dp"
+    android:clickable="true" android:focusable="true" app:cardCornerRadius="18dp" app:cardElevation="0dp"
+    app:cardBackgroundColor="#FFFEFA" app:strokeColor="#D9DED4" app:strokeWidth="1dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:minHeight="214dp"
+        android:orientation="vertical" android:gravity="center_horizontal" android:padding="14dp">
+        <ImageView android:layout_width="72dp" android:layout_height="64dp" android:importantForAccessibility="no"
+            app:srcCompat="@drawable/ic_building_sketch"/>
+        <TextView android:id="@+id/tv_building_code" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:gravity="center" android:textStyle="bold" android:textSize="27sp"
+            android:maxLines="2" android:textColor="#283527"/>
+        <TextView android:id="@+id/tv_building_name" android:layout_width="match_parent" android:layout_height="30dp"
+            android:gravity="center" android:maxLines="2" android:ellipsize="end" android:textSize="11sp" android:textColor="#74806D"/>
+        <TextView android:id="@+id/tv_building_counts" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="6dp" android:gravity="center" android:textSize="11sp" android:textColor="#3F513A"/>
+        <TextView android:id="@+id/tv_building_hint" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" android:gravity="center" android:textSize="10sp" android:textColor="#788171"/>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

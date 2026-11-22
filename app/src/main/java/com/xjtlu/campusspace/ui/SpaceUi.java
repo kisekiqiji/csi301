@@ -65,6 +65,10 @@ public final class SpaceUi {
     }
 
     public static void open(Context context, Space space) {
+        open(context, space, 0, -1);
+    }
+
+    public static void open(Context context, Space space, int dayOffset, int queryMinute) {
         Repo repo = Repo.get(context);
         Rows.BookingGroup group = repo.bookingGroupForSpace(space.id);
         if (group != null) {
@@ -73,6 +77,8 @@ public final class SpaceUi {
                     Intent i = new Intent(context, BookingDetailActivity.class);
                     i.putExtra(BookingDetailActivity.EXTRA_ID, resource.id);
                     i.putExtra(BookingDetailActivity.EXTRA_GROUP_ID, group.id);
+                    i.putExtra(RoomDetailActivity.EXTRA_DAY_OFFSET, dayOffset);
+                    i.putExtra(RoomDetailActivity.EXTRA_QUERY_MINUTE, queryMinute);
                     context.startActivity(i);
                     return;
                 }
@@ -80,6 +86,8 @@ public final class SpaceUi {
         }
         Intent i = new Intent(context, RoomDetailActivity.class);
         i.putExtra(RoomDetailActivity.EXTRA_SPACE_ID, space.id);
+        i.putExtra(RoomDetailActivity.EXTRA_DAY_OFFSET, dayOffset);
+        i.putExtra(RoomDetailActivity.EXTRA_QUERY_MINUTE, queryMinute);
         context.startActivity(i);
     }
 

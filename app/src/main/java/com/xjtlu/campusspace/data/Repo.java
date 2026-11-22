@@ -576,6 +576,39 @@ public final class Repo {
         });
     }
 
+    /** Account-specific reads always derive the author from the current local session. */
+    public void myNotes(Callback<List<Note>> callback) {
+        LocalAuth.get(app).ensureLoaded(() -> io.execute(() -> {
+            List<Note> result = new ArrayList<>();
+            String authorId = null;
+            try {
+                Rows.User author = LocalAuth.get(app).authenticatedUserForWrite();
+                if (author != null) { authorId = author.id; result = mapNotes(db.dao().notesOfAuthor(author.id)); }
+            } catch (RuntimeException e) { Log.e("CampusSpace", "Cannot load account notes", e); }
+            List<Note> ready = result;
+            String requestedAuthor = authorId;
+            main.post(() -> {
+                Rows.User current = LocalAuth.get(app).currentUser();
+                callback.onResult(current != null && current.id.equals(requestedAuthor) ? ready : new ArrayList<>());
+            });
+        }));
+    }
+
+    public void noteCountForCurrentUser(Callback<Integer> callback) {
+        LocalAuth.get(app).ensureLoaded(() -> io.execute(() -> {
+            int count = 0; String authorId = null;
+            try {
+                Rows.User author = LocalAuth.get(app).authenticatedUserForWrite();
+                if (author != null) { authorId = author.id; count = db.dao().countNotesOfAuthor(author.id); }
+            } catch (RuntimeException e) { Log.e("CampusSpace", "Cannot count account notes", e); }
+            int ready = count; String requestedAuthor = authorId;
+            main.post(() -> {
+                Rows.User current = LocalAuth.get(app).currentUser();
+                callback.onResult(current != null && current.id.equals(requestedAuthor) ? ready : 0);
+            });
+        }));
+    }
+
     private List<Note> mapNotes(List<Rows.Note> rows) {
         Map<String, Rows.User> authors = new HashMap<>();
         for (Rows.User user : db.dao().users()) authors.put(user.id, user);
@@ -612,9 +645,11 @@ public final class Repo {
     }
 
     public void addNote(Note note, Runnable onDone, Callback<String> onError) {
+        Rows.User requestedAuthor = LocalAuth.get(app).currentUser();
+        String expectedAuthor = requestedAuthor == null ? null : requestedAuthor.id;
         io.execute(() -> {
             try {
-                db.runInTransaction(() -> saveNote(note));
+                db.runInTransaction(() -> saveNote(note, expectedAuthor));
                 main.post(() -> { if (onDone != null) onDone.run(); });
             } catch (Exception e) {
                 Log.e("CampusSpace", "Cannot save note", e);
@@ -624,7 +659,10 @@ public final class Repo {
         });
     }
 
-    private void saveNote(Note note) {
+    private void saveNote(Note note, String expectedAuthor) {
+        Rows.User author = LocalAuth.get(app).authenticatedUserForWrite();
+        if (author == null || !author.id.equals(expectedAuthor))
+            throw new IllegalArgumentException("请先登录本机账号后再发布纸条");
         if (note == null || blank(note.content)) throw new IllegalArgumentException("请填写纸条内容");
         if (note.content.trim().length() > 2000) throw new IllegalArgumentException("纸条内容最多2000字");
         if (!Note.C_LOST.equals(note.category) && !Note.C_CHAT.equals(note.category)
@@ -658,7 +696,6 @@ public final class Repo {
         if (note.imagePaths != null) for (String path : note.imagePaths) if (!blank(path)) paths.add(path);
         if (paths.isEmpty() && !blank(note.imagePath)) paths.add(note.imagePath);
         if (paths.size() > 4) throw new IllegalArgumentException("每条纸条最多添加4张图片");
-        Rows.User author = anonymousAuthor();
         Rows.Note row = new Rows.Note();
         row.id = blank(note.id) ? newNoteId() : note.id;
         row.spaceId = spaceId;
@@ -684,25 +721,6 @@ public final class Repo {
         note.equipmentId = row.equipmentId;
         note.authorId = row.authorId;
         note.nickname = author.displayName;
-    }
-
-    private Rows.User anonymousAuthor() {
-        String userId = app.getSharedPreferences("campusspace_identity", Context.MODE_PRIVATE)
-                .getString("anonymous_user_id", null);
-        if (userId == null) {
-            userId = "USER-" + UUID.randomUUID();
-            if (!app.getSharedPreferences("campusspace_identity", Context.MODE_PRIVATE).edit()
-                    .putString("anonymous_user_id", userId).commit()) {
-                throw new IllegalStateException("Unable to persist anonymous identity");
-            }
-        }
-        for (Rows.User user : db.dao().users()) if (userId.equals(user.id)) return user;
-        Rows.User author = new Rows.User();
-        author.id = userId;
-        author.authSubject = null;
-        author.displayName = "匿名同学" + userId.substring(userId.length() - 4).toUpperCase(Locale.ROOT);
-        db.dao().insertUser(author);
-        return author;
     }
 
     public static String newNoteId() { return "NOTE-" + UUID.randomUUID().toString().toUpperCase(Locale.ROOT); }

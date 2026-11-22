@@ -32,6 +32,7 @@ import com.xjtlu.campusspace.data.entity.LibrarySeat;
 import com.xjtlu.campusspace.data.entity.Note;
 import com.xjtlu.campusspace.data.store.Rows;
 import com.xjtlu.campusspace.ui.SpaceUi;
+import com.xjtlu.campusspace.ui.home.RoomDetailActivity;
 import com.xjtlu.campusspace.ui.widget.Pills;
 import com.xjtlu.campusspace.ui.widget.TimelineView;
 import com.xjtlu.campusspace.util.UrlOpener;
@@ -49,6 +50,7 @@ public class BookingDetailActivity extends AppCompatActivity {
     private Rows.BookingResource resource;
     private String spaceId;
     private int dayOffset;
+    private int queryMinute = -1;
     private LinearLayout slotsContainer;
     private GridLayout seatsGrid;
     private ChipGroup days;
@@ -59,7 +61,8 @@ public class BookingDetailActivity extends AppCompatActivity {
         super.onCreate(saved);
         setContentView(R.layout.activity_booking_detail);
         repo = Repo.get(this);
-        if (saved != null) dayOffset = saved.getInt("day_offset", 0);
+        dayOffset = saved == null ? getIntent().getIntExtra(RoomDetailActivity.EXTRA_DAY_OFFSET, 0) : saved.getInt("day_offset", 0);
+        queryMinute = saved == null ? getIntent().getIntExtra(RoomDetailActivity.EXTRA_QUERY_MINUTE, -1) : saved.getInt("query_minute", -1);
         ((MaterialToolbar)findViewById(R.id.toolbar)).setNavigationOnClickListener(v -> finish());
         meta = findViewById(R.id.tv_meta);
         slotsContainer = findViewById(R.id.container_slots);
@@ -119,11 +122,14 @@ public class BookingDetailActivity extends AppCompatActivity {
 
     @Override protected void onResume() { super.onResume(); if (group != null) load(); }
     @Override protected void onSaveInstanceState(@NonNull Bundle out) {
-        out.putInt("day_offset", dayOffset); super.onSaveInstanceState(out);
+        out.putInt("day_offset", dayOffset); out.putInt("query_minute", queryMinute); super.onSaveInstanceState(out);
     }
     private void buildDays() {
         days.removeAllViews();
-        for (int off : new int[]{-1, 0, 1, 2}) {
+        java.util.LinkedHashSet<Integer> offsets = new java.util.LinkedHashSet<>();
+        for (int off : new int[]{-1, 0, 1, 2}) offsets.add(off);
+        offsets.add(dayOffset);
+        for (int off : offsets) {
             Chip chip = new Chip(this); chip.setText(TimeProvider.dayLabel(off));
             chip.setCheckable(true); chip.setChecked(off == dayOffset);
             chip.setOnClickListener(v -> { dayOffset = off; buildDays(); render(); });
@@ -169,8 +175,10 @@ public class BookingDetailActivity extends AppCompatActivity {
         boolean known = spaceId != null && repo.hasSchedule(spaceId, dayOffset);
         List<Lecture> lectures = repo.lecturesOn(spaceId, dayOffset);
         if (!known) message("这一天暂无有效课表，状态未知");
-        else if (dayOffset == 0) {
-            StatusCalculator.State state = StatusCalculator.of(lectures, TimeProvider.minuteOfDay());
+        else if (dayOffset == 0 || queryMinute >= 0) {
+            int minute = queryMinute >= 0 && queryMinute < 1440 ? queryMinute : TimeProvider.minuteOfDay();
+            StatusCalculator.State state = StatusCalculator.of(lectures, minute);
+            if (queryMinute >= 0) message(TimeProvider.dayLabel(dayOffset) + " " + TimeText.hhmm(minute));
             message(state == StatusCalculator.State.IN_CLASS ? "课表显示上课中"
                     : state == StatusCalculator.State.SOON ? "30 分钟内即将上课" : "当前为课表空档，请以现场情况为准");
         } else message(TimeProvider.dayLabel(dayOffset) + "共 " + lectures.size() + " 节课");

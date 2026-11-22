@@ -12,6 +12,7 @@ import androidx.lifecycle.Lifecycle;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.xjtlu.campusspace.R;
 import com.xjtlu.campusspace.data.Repo;
+import com.xjtlu.campusspace.ui.account.ProfileFragment;
 import com.xjtlu.campusspace.ui.booking.BookingFragment;
 import com.xjtlu.campusspace.ui.facility.FacilityFragment;
 import com.xjtlu.campusspace.ui.home.HomeFragment;
@@ -57,10 +58,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void show(int id) {
-        String tag = id == R.id.tab_booking ? "booking" : id == R.id.tab_facility ? "facility" : "home";
+        String tag = id == R.id.tab_booking ? "booking" : id == R.id.tab_facility ? "facility"
+                : id == R.id.tab_profile ? "profile" : "home";
         Fragment target = getSupportFragmentManager().findFragmentByTag(tag);
         if (target == null) target = "booking".equals(tag) ? new BookingFragment()
-                : "facility".equals(tag) ? new FacilityFragment() : new HomeFragment();
+                : "facility".equals(tag) ? new FacilityFragment()
+                : "profile".equals(tag) ? new ProfileFragment() : new HomeFragment();
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         for (Fragment fragment : getSupportFragmentManager().getFragments()) {
             if (fragment != target && fragment.isAdded()) {
@@ -82,7 +85,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void selectTab(int index) {
-        nav.setSelectedItemId(index == 0 ? R.id.tab_home : index == 1 ? R.id.tab_booking : R.id.tab_facility);
+        nav.setSelectedItemId(index == 0 ? R.id.tab_home : index == 1 ? R.id.tab_booking
+                : index == 3 ? R.id.tab_profile : R.id.tab_facility);
     }
 
     public void toast(@NonNull String message) { Toast.makeText(this, message, Toast.LENGTH_SHORT).show(); }

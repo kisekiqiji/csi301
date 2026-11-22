@@ -158,11 +158,21 @@ public final class Rows {
         @ColumnInfo(name = "raw_status") @NonNull public String rawStatus = "";
     }
 
-    @Entity(tableName = "users", indices = @Index(value = "auth_subject", unique = true))
+    @Entity(tableName = "users", indices = {@Index(value = "auth_subject", unique = true),
+            @Index(value = "username", unique = true)})
     public static class User {
         @PrimaryKey @NonNull public String id = "";
         @ColumnInfo(name = "auth_subject") @Nullable public String authSubject;
         @ColumnInfo(name = "display_name") @NonNull public String displayName = "";
+        @ColumnInfo(collate = ColumnInfo.NOCASE) @Nullable public String username;
+        @ColumnInfo(name = "password_hash") @Nullable public String passwordHash;
+        @ColumnInfo(name = "password_salt") @Nullable public String salt;
+        @ColumnInfo(name = "password_algorithm") @Nullable public String passwordAlgorithm;
+        @ColumnInfo(name = "password_iterations", defaultValue = "0") public int passwordIterations;
+        @ColumnInfo(name = "created_at", defaultValue = "0") public long createdAt;
+        @ColumnInfo(name = "failed_attempts", defaultValue = "0") public int failedAttempts;
+        @ColumnInfo(name = "locked_until", defaultValue = "0") public long lockedUntil;
+        @ColumnInfo(name = "rules_accepted_at", defaultValue = "0") public long rulesAcceptedAt;
     }
 
     @Entity(tableName = "notes", foreignKeys = {
