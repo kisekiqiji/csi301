@@ -24,7 +24,9 @@ import com.xjtlu.campusspace.R;
 import com.xjtlu.campusspace.adapter.NoteAdapter;
 import com.xjtlu.campusspace.data.LocalAuth;
 import com.xjtlu.campusspace.data.Repo;
+import com.xjtlu.campusspace.data.FavoritesStore;
 import com.xjtlu.campusspace.data.store.Rows;
+import com.xjtlu.campusspace.ui.demo.DemoConsoleActivity;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -89,6 +91,10 @@ public class ProfileFragment extends Fragment {
         view.findViewById(R.id.profile_sign_in).setOnClickListener(v ->
                 account.launch(new Intent(requireContext(), AccountActivity.class)));
         view.findViewById(R.id.profile_rules).setOnClickListener(v -> AccountRules.show(requireContext()));
+        view.findViewById(R.id.profile_favorites).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), FavoritesActivity.class)));
+        view.findViewById(R.id.profile_demo).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), DemoConsoleActivity.class)));
         view.findViewById(R.id.profile_edit_name).setOnClickListener(v -> editName());
         view.findViewById(R.id.profile_logout).setOnClickListener(v -> {
             if (state.busy) return;
@@ -117,6 +123,8 @@ public class ProfileFragment extends Fragment {
 
     private void refresh() {
         if (auth == null || getView() == null || !isAdded()) return;
+        ((TextView) getView().findViewById(R.id.profile_favorites))
+                .setText("我的收藏 · " + FavoritesStore.get(requireContext()).count());
         final int request = ++generation;
         auth.ensureLoaded(() -> {
             if (!active(request)) return;

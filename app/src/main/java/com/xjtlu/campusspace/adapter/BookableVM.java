@@ -18,6 +18,12 @@ public class BookableVM {
     public String spaceId = "";
     /** SLOTS = 时段列表，SEATS = 座位网格 */
     public String mode = MODE_SLOTS;
+    /** 演示用「现在可去」排序：此刻是否可用、今天剩余可用量。 */
+    public boolean freeNow;
+    public int freeUnits;
+    public int totalUnits;
+    /** 课表型资源的当前空档结束分钟（无下一节课时为 22:00）。 */
+    public int freeUntilMin = -1;
 
     public BookableVM() {
     }

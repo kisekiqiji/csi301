@@ -13,6 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@android:color/white"
+        app:menu="@menu/menu_favorite"
         app:navigationIcon="?attr/homeAsUpIndicator"
         app:title="" />
 

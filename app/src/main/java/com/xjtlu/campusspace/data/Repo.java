@@ -526,7 +526,7 @@ public final class Repo {
                     new String[]{resource.sourceId, group.displayMode, group.id});
         }
         if (scopes.isEmpty()) return "数据未就绪";
-        long now = System.currentTimeMillis();
+        long now = TimeProvider.now();
         long[] today = dayWindow(0);
         int valid = 0;
         long lastFetchedAt = 0;
@@ -735,7 +735,7 @@ public final class Repo {
             if (sourceId == null) return null;
         }
         return SnapshotSelector.latestSuccessful(candidates, sourceId, kind, scope,
-                window[0], window[1], System.currentTimeMillis(), SNAPSHOT_MAX_AGE_MILLIS);
+                window[0], window[1], TimeProvider.now(), SNAPSHOT_MAX_AGE_MILLIS);
     }
 
     private static long[] dayWindow(int dayOffset) {

@@ -10,6 +10,7 @@
     -->
 
     <application
+        android:name=".CampusSpaceApp"
         android:allowBackup="false"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -45,5 +46,14 @@
             android:name=".ui.note.NotePublishActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.demo.DemoConsoleActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".ui.account.FavoritesActivity"
+            android:exported="false" />
     </application>
 </manifest>

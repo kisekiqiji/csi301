@@ -19,6 +19,7 @@ import android.widget.EditText;
 import android.widget.DatePicker;
 import android.widget.TimePicker;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -41,6 +42,7 @@ import com.xjtlu.campusspace.core.StatusCalculator;
 import com.xjtlu.campusspace.core.TimeProvider;
 import com.xjtlu.campusspace.core.TimeText;
 import com.xjtlu.campusspace.data.Repo;
+import com.xjtlu.campusspace.data.FavoritesStore;
 import com.xjtlu.campusspace.data.entity.BookableSlot;
 import com.xjtlu.campusspace.data.entity.Building;
 import com.xjtlu.campusspace.data.entity.LibrarySeat;
@@ -112,7 +114,7 @@ public class HomeFragment extends Fragment {
         dateButton = header.findViewById(R.id.btn_query_date); timeButton = header.findViewById(R.id.btn_query_time);
         nowChip = header.findViewById(R.id.chip_query_now); tomorrowChip = header.findViewById(R.id.chip_query_tomorrow);
         search = header.findViewById(R.id.et_room_search); search.setText(keyword);
-        adapter = new SpaceAdapter(this::openSpace);
+        adapter = new SpaceAdapter(this::openSpace, this::toggleFavorite);
         notes = new NoteAdapter(false);
         TextView notesHeading = new TextView(requireContext());
         notesHeading.setText("最新纸条"); notesHeading.setTextSize(14); notesHeading.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -179,6 +181,13 @@ public class HomeFragment extends Fragment {
         InputMethodManager keyboard = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
         if (keyboard != null) keyboard.hideSoftInputFromWindow(search.getWindowToken(), 0);
         SpaceUi.open(requireContext(), space, selectedOffset(), selectedMinute());
+    }
+
+    private void toggleFavorite(Space space, boolean favorite) {
+        FavoritesStore.get(requireContext()).set(space.id, favorite);
+        adapter.setFavoriteIds(FavoritesStore.get(requireContext()).ids());
+        Toast.makeText(requireContext(), favorite ? "已收藏 " + space.name : "已取消收藏",
+                Toast.LENGTH_SHORT).show();
     }
 
     private void openBuildingPicker(View view) {
@@ -359,6 +368,7 @@ public class HomeFragment extends Fragment {
             }
             items.add(new SpaceAdapter.Item(match.space, match.state, subtitle));
         }
+        adapter.setFavoriteIds(FavoritesStore.get(requireContext()).ids());
         adapter.setItems(items);
         String scope = publicScope ? "公共空间" : "教室";
         String message = (building == null ? "全部楼栋" : building) + " · " + dateLabel() + " " + TimeText.hhmm(minute)

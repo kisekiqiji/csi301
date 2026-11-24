@@ -3,6 +3,7 @@ package com.xjtlu.campusspace.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -14,13 +15,20 @@ import com.xjtlu.campusspace.data.entity.Space;
 import com.xjtlu.campusspace.ui.widget.Pills;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /** 首页/详情通用的空间列表 */
 public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
 
     public interface OnClick {
         void onClick(Space space);
+    }
+
+    public interface OnFavorite {
+        void onFavorite(Space space, boolean favorite);
     }
 
     /** 一行数据：空间 + 已算好的状态 + 副标题 */
@@ -38,14 +46,22 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
 
     private final List<Item> items = new ArrayList<>();
     private final OnClick onClick;
+    private final OnFavorite onFavorite;
+    private Set<String> favoriteIds = Collections.emptySet();
 
-    public SpaceAdapter(OnClick onClick) {
+    public SpaceAdapter(OnClick onClick, OnFavorite onFavorite) {
         this.onClick = onClick;
+        this.onFavorite = onFavorite;
     }
 
     public void setItems(List<Item> list) {
         items.clear();
         if (list != null) items.addAll(list);
+        notifyDataSetChanged();
+    }
+
+    public void setFavoriteIds(Set<String> ids) {
+        favoriteIds = ids == null ? Collections.emptySet() : new LinkedHashSet<>(ids);
         notifyDataSetChanged();
     }
 
@@ -87,6 +103,14 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
         Pills.apply(h.state, color);
         h.state.setText(label);
 
+        boolean favorite = favoriteIds.contains(s.id);
+        h.fav.setVisibility(onFavorite == null ? View.GONE : View.VISIBLE);
+        h.fav.setImageResource(favorite ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        h.fav.setContentDescription(favorite ? "取消收藏" : "收藏");
+        h.fav.setOnClickListener(v -> {
+            if (onFavorite != null) onFavorite.onFavorite(s, !favorite);
+        });
+
         h.itemView.setOnClickListener(v -> {
             if (onClick != null) onClick.onClick(s);
         });
@@ -102,6 +126,7 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
         final TextView state;
         final TextView sub;
         final TextView fac;
+        final ImageButton fav;
 
         VH(@NonNull View v) {
             super(v);
@@ -109,6 +134,7 @@ public class SpaceAdapter extends RecyclerView.Adapter<SpaceAdapter.VH> {
             state = v.findViewById(R.id.tv_state);
             sub = v.findViewById(R.id.tv_sub);
             fac = v.findViewById(R.id.tv_fac);
+            fav = v.findViewById(R.id.btn_fav);
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.xjtlu.campusspace.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -11,9 +12,12 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Lifecycle;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.xjtlu.campusspace.R;
+import com.xjtlu.campusspace.core.DemoClock;
+import com.xjtlu.campusspace.core.TimeProvider;
 import com.xjtlu.campusspace.data.Repo;
 import com.xjtlu.campusspace.ui.account.ProfileFragment;
 import com.xjtlu.campusspace.ui.booking.BookingFragment;
+import com.xjtlu.campusspace.ui.demo.DemoConsoleActivity;
 import com.xjtlu.campusspace.ui.facility.FacilityFragment;
 import com.xjtlu.campusspace.ui.home.HomeFragment;
 
@@ -24,11 +28,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
+        DemoClock.restore(this);
         setContentView(R.layout.activity_main);
         repo = Repo.get(this);
         nav = findViewById(R.id.bottom_nav);
         dataLabel = findViewById(R.id.tv_data_label);
         loadState = findViewById(R.id.tv_load_state);
+        dataLabel.setOnClickListener(v -> openDemoConsole());
         nav.setOnItemSelectedListener(item -> {
             if (!repo.isLoaded()) return false;
             show(item.getItemId());
@@ -36,6 +42,25 @@ public class MainActivity extends AppCompatActivity {
         });
         loadState.setOnClickListener(v -> load());
         load();
+    }
+
+    private void openDemoConsole() {
+        startActivity(new Intent(this, DemoConsoleActivity.class));
+    }
+
+    private void renderDataLabel() {
+        if (repo == null || !repo.isLoaded() || dataLabel == null) return;
+        String label = repo.dataLabel();
+        if (DemoClock.isDemo(this)) {
+            dataLabel.setText("演示模式 · " + DemoClock.label(TimeProvider.now())
+                    + "\n" + label + " · 点击打开演示控制台");
+            dataLabel.setBackgroundColor(0xFFFFE7C2);
+            dataLabel.setTextColor(0xFF7A4A00);
+        } else {
+            dataLabel.setText(label);
+            dataLabel.setBackgroundColor(0xFFFFF3DB);
+            dataLabel.setTextColor(0xFF765A23);
+        }
     }
 
     private void load() {
@@ -51,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
                 loadState.setVisibility(View.VISIBLE);
                 return;
             }
-            dataLabel.setText(repo.dataLabel());
+            renderDataLabel();
             for (int n = 0; n < nav.getMenu().size(); n++) nav.getMenu().getItem(n).setEnabled(true);
             show(nav.getSelectedItemId());
         });
@@ -79,9 +104,12 @@ public class MainActivity extends AppCompatActivity {
 
     @Override protected void onResume() {
         super.onResume();
-        if (repo != null && repo.isLoaded()) repo.ensureLoaded(() -> {
-            if (!isFinishing() && !isDestroyed()) dataLabel.setText(repo.dataLabel());
-        });
+        if (repo != null && repo.isLoaded()) {
+            renderDataLabel();
+            repo.ensureLoaded(() -> {
+                if (!isFinishing() && !isDestroyed()) renderDataLabel();
+            });
+        }
     }
 
     public void selectTab(int index) {

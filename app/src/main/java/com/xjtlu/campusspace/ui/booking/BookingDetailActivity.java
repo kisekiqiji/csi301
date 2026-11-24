@@ -4,6 +4,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.GridLayout;
 import android.widget.HorizontalScrollView;
@@ -26,6 +27,7 @@ import com.xjtlu.campusspace.core.StatusCalculator;
 import com.xjtlu.campusspace.core.TimeProvider;
 import com.xjtlu.campusspace.core.TimeText;
 import com.xjtlu.campusspace.data.Repo;
+import com.xjtlu.campusspace.data.FavoritesStore;
 import com.xjtlu.campusspace.data.entity.BookableSlot;
 import com.xjtlu.campusspace.data.entity.Lecture;
 import com.xjtlu.campusspace.data.entity.LibrarySeat;
@@ -64,6 +66,15 @@ public class BookingDetailActivity extends AppCompatActivity {
         dayOffset = saved == null ? getIntent().getIntExtra(RoomDetailActivity.EXTRA_DAY_OFFSET, 0) : saved.getInt("day_offset", 0);
         queryMinute = saved == null ? getIntent().getIntExtra(RoomDetailActivity.EXTRA_QUERY_MINUTE, -1) : saved.getInt("query_minute", -1);
         ((MaterialToolbar)findViewById(R.id.toolbar)).setNavigationOnClickListener(v -> finish());
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_favorite) {
+                toggleFavorite(item);
+                return true;
+            }
+            return false;
+        });
+        updateFavoriteIcon();
         meta = findViewById(R.id.tv_meta);
         slotsContainer = findViewById(R.id.container_slots);
         seatsGrid = findViewById(R.id.grid_seats);
@@ -96,6 +107,7 @@ public class BookingDetailActivity extends AppCompatActivity {
                 if (!resources.isEmpty()) resource = resources.get(0);
             }
             spaceId = resource == null ? null : resource.spaceId;
+            updateFavoriteIcon();
             String title = BookableVM.MODE_SEATS.equals(group.displayMode) ? group.label
                     : resource == null ? group.label : resource.label;
             ((MaterialToolbar)findViewById(R.id.toolbar)).setTitle(title);
@@ -109,6 +121,26 @@ public class BookingDetailActivity extends AppCompatActivity {
             findViewById(R.id.btn_note).setEnabled(spaceId != null && repo.spaceOf(spaceId) != null);
             buildDays(); render();
         });
+    }
+
+    private void toggleFavorite(MenuItem item) {
+        if (spaceId == null) return;
+        boolean favorite = FavoritesStore.get(this).toggle(spaceId);
+        item.setIcon(favorite ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        item.setTitle(favorite ? "取消收藏" : "收藏");
+        Toast.makeText(this, favorite ? "已收藏这个空间" : "已取消收藏",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateFavoriteIcon() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar == null || toolbar.getMenu() == null) return;
+        MenuItem item = toolbar.getMenu().findItem(R.id.action_favorite);
+        if (item == null) return;
+        item.setVisible(spaceId != null);
+        boolean favorite = spaceId != null && FavoritesStore.get(this).isFavorite(spaceId);
+        item.setIcon(favorite ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        item.setTitle(favorite ? "取消收藏" : "收藏");
     }
 
     private boolean configuredUrl(String url) {

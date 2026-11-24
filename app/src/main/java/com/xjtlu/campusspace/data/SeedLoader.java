@@ -14,6 +14,47 @@ public final class SeedLoader {
     public static final String TIMETABLE = "DEMO_TIMETABLE", BOOKING = "DEMO_BOOKING";
     private SeedLoader() { }
 
+    /** 演示拨表后重新生成演示纸条的时间，只替换 SEED-AUTHOR，不触碰用户自己的纸条。 */
+    public static void rebuildDemoNotes(Context context, AppDatabase db) {
+        try {
+            JSONObject seed = new JSONObject(read(context, "seed.json"));
+            db.runInTransaction(() -> {
+                try {
+                    Map<String, Rows.Equipment> equipment = new HashMap<>();
+                    for (Rows.Equipment row : db.dao().equipment()) equipment.put(row.id, row);
+                    List<Rows.User> authors = new ArrayList<>();
+                    db.dao().deleteSeedNotes();
+                    List<Rows.Note> notes = new ArrayList<>();
+                    long now = TimeProvider.now();
+                    for (JSONObject item : items(seed, "notes")) {
+                        String target = item.getString("targetId");
+                        Rows.Equipment device = equipment.get(target);
+                        Rows.User author = new Rows.User();
+                        author.id = "SEED-AUTHOR-" + item.getString("id");
+                        author.displayName = item.optString("nickname", "匿名同学");
+                        authors.add(author);
+                        Rows.Note note = new Rows.Note();
+                        note.id = item.getString("id");
+                        note.authorId = author.id;
+                        note.spaceId = device == null ? target : device.spaceId;
+                        note.equipmentId = device == null ? null : target;
+                        note.type = item.getString("category");
+                        note.body = item.getString("content");
+                        note.status = "VISIBLE";
+                        note.createdAt = now - item.optLong("createdAtMinutesAgo", 60) * 60_000L;
+                        notes.add(note);
+                    }
+                    db.dao().insertUsersIgnore(authors);
+                    db.dao().insertNotes(notes);
+                } catch (Exception e) {
+                    throw new IllegalStateException("重建演示纸条失败", e);
+                }
+            });
+        } catch (Exception e) {
+            throw new IllegalStateException("读取本地演示纸条失败", e);
+        }
+    }
+
     public static void seedIfNeeded(Context context, AppDatabase db) {
         try {
             JSONObject seed = new JSONObject(read(context, "seed.json"));

@@ -1,8 +1,10 @@
 package com.xjtlu.campusspace.ui.home;
 
 import android.os.Bundle;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,6 +17,7 @@ import com.xjtlu.campusspace.adapter.NoteAdapter;
 import com.xjtlu.campusspace.core.StatusCalculator;
 import com.xjtlu.campusspace.core.TimeProvider;
 import com.xjtlu.campusspace.core.TimeText;
+import com.xjtlu.campusspace.data.FavoritesStore;
 import com.xjtlu.campusspace.data.Repo;
 import com.xjtlu.campusspace.data.entity.Lecture;
 import com.xjtlu.campusspace.data.entity.Note;
@@ -42,7 +45,16 @@ public class RoomDetailActivity extends AppCompatActivity {
         dayOffset = saved == null ? getIntent().getIntExtra(EXTRA_DAY_OFFSET, 0) : saved.getInt("day_offset", 0);
         queryMinute = saved == null ? getIntent().getIntExtra(EXTRA_QUERY_MINUTE, -1) : saved.getInt(EXTRA_QUERY_MINUTE, -1);
         repo = Repo.get(this);
-        ((MaterialToolbar)findViewById(R.id.toolbar)).setNavigationOnClickListener(v -> finish());
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setNavigationOnClickListener(v -> finish());
+        toolbar.setOnMenuItemClickListener(item -> {
+            if (item.getItemId() == R.id.action_favorite) {
+                toggleFavorite(item);
+                return true;
+            }
+            return false;
+        });
+        updateFavoriteIcon();
         timeline = findViewById(R.id.timeline);
         status = findViewById(R.id.tv_status);
         days = findViewById(R.id.chips_day);
@@ -64,6 +76,7 @@ public class RoomDetailActivity extends AppCompatActivity {
             }
             status.setOnClickListener(null);
             space = repo.spaceOf(getIntent().getStringExtra(EXTRA_SPACE_ID));
+            updateFavoriteIcon();
             if (space == null) { status.setText("找不到这个空间，请返回列表重选"); return; }
             ((MaterialToolbar)findViewById(R.id.toolbar)).setTitle(space.name);
             ((TextView)findViewById(R.id.tv_title)).setText(space.name);
@@ -83,6 +96,26 @@ public class RoomDetailActivity extends AppCompatActivity {
         out.putInt("day_offset", dayOffset); out.putInt(EXTRA_QUERY_MINUTE, queryMinute); super.onSaveInstanceState(out);
     }
     private void publish() { if (space != null) SpaceUi.publish(this, space.id, null); }
+
+    private void toggleFavorite(MenuItem item) {
+        if (space == null) return;
+        boolean favorite = FavoritesStore.get(this).toggle(space.id);
+        item.setIcon(favorite ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        item.setTitle(favorite ? "取消收藏" : "收藏");
+        Toast.makeText(this, favorite ? "已收藏 " + space.name : "已取消收藏 " + space.name,
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private void updateFavoriteIcon() {
+        MaterialToolbar toolbar = findViewById(R.id.toolbar);
+        if (toolbar == null || toolbar.getMenu() == null) return;
+        MenuItem item = toolbar.getMenu().findItem(R.id.action_favorite);
+        if (item == null) return;
+        item.setVisible(space != null);
+        boolean favorite = space != null && FavoritesStore.get(this).isFavorite(space.id);
+        item.setIcon(favorite ? R.drawable.ic_star_filled : R.drawable.ic_star);
+        item.setTitle(favorite ? "取消收藏" : "收藏");
+    }
 
     private void buildDays() {
         days.removeAllViews();

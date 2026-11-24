@@ -57,4 +57,17 @@ public interface AppDao {
     @Insert(onConflict = OnConflictStrategy.ABORT) void insertNoteImages(List<Rows.NoteImage> rows);
     @Insert(onConflict = OnConflictStrategy.ABORT) void insertNote(Rows.Note row);
     @Insert(onConflict = OnConflictStrategy.ABORT) void insertUser(Rows.User row);
+    @Insert(onConflict = OnConflictStrategy.IGNORE) void insertUsersIgnore(List<Rows.User> rows);
+
+    // 演示模式重建：先删快照子表，再删演示批次；用户数据不受影响。
+    @Query("DELETE FROM classroom_events WHERE sync_run_id IN (SELECT id FROM sync_runs WHERE source_id = 'DEMO_TIMETABLE')")
+    void deleteDemoEvents();
+    @Query("DELETE FROM booking_slots WHERE sync_run_id IN (SELECT id FROM sync_runs WHERE source_id = 'DEMO_BOOKING')")
+    void deleteDemoSlots();
+    @Query("DELETE FROM seat_states WHERE sync_run_id IN (SELECT id FROM sync_runs WHERE source_id = 'DEMO_BOOKING')")
+    void deleteDemoSeats();
+    @Query("DELETE FROM sync_runs WHERE source_id IN ('DEMO_TIMETABLE', 'DEMO_BOOKING')")
+    void deleteDemoRuns();
+    @Query("DELETE FROM notes WHERE author_id LIKE 'SEED-AUTHOR-%'")
+    void deleteSeedNotes();
 }
